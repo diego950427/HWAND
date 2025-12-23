@@ -1,0 +1,505 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>林煜宸 | U11310019 | 地球物理學習歷程</title>
+    <meta name="description" content="林煜宸的地球物理學學習成果全紀錄，包含程式設計、震測實驗與理論推導。">
+
+    <!-- 核心函式庫 (CDN) -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    
+    <!-- 數學公式支援 (KaTeX) -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+
+    <!-- 字體設定 -->
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;500;700&family=Noto+Sans+TC:wght@300;400;500;700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Noto Sans TC', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'monospace'],
+                        display: ['Space Grotesk', 'sans-serif'],
+                    },
+                    colors: {
+                        dark: { bg: '#050505', card: '#121212', border: '#222' },
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        body { 
+            background-color: #050505; 
+            color: #e5e5e5; 
+            overflow-x: hidden; 
+            overflow-y: auto;   
+        }
+        
+        /* 載入動畫 */
+        #loader { position: fixed; inset: 0; background: #000; z-index: 9999; display: flex; flex-direction: column; align-items: center; justify-content: center; transition: transform 0.8s ease-in-out; }
+        .loader-line { width: 300px; height: 2px; background: #1f1f1f; margin-top: 30px; position: relative; overflow: hidden; }
+        .loader-fill { position: absolute; left: 0; top: 0; height: 100%; width: 0%; background: #3b82f6; box-shadow: 0 0 20px #3b82f6; }
+
+        /* 卡片特效 */
+        .menu-card {
+            background: rgba(20, 20, 20, 0.4); 
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.05); 
+            border-radius: 20px; 
+            padding: 30px;
+            transition: transform 0.3s ease, background 0.3s ease, border 0.3s ease, box-shadow 0.3s ease;
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+            opacity: 1; /* 確保預設可見 */
+        }
+        .menu-card:hover { 
+            transform: translateY(-8px) scale(1.02); 
+            background: rgba(30, 30, 30, 0.6);
+            border-color: rgba(255,255,255,0.15);
+            box-shadow: 0 20px 40px -10px rgba(0,0,0,0.6); 
+        }
+        .menu-card::before {
+            content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: linear-gradient(45deg, transparent, rgba(255,255,255,0.03), transparent);
+            transform: translateX(-100%); transition: 0.5s;
+        }
+        .menu-card:hover::before { transform: translateX(100%); }
+
+        /* 內容區塊 */
+        .view-section { 
+            display: none; 
+            opacity: 0; 
+            padding-top: 80px; 
+            padding-bottom: 100px; 
+            min-height: 100vh;
+        }
+        .view-section.active { 
+            display: block; 
+            opacity: 1; 
+        }
+        
+        /* 玻璃容器 */
+        .glass-panel {
+            background: rgba(15, 15, 15, 0.7); backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 24px; padding: 40px;
+        }
+
+        /* 捲軸美化 */
+        ::-webkit-scrollbar { width: 10px; }
+        ::-webkit-scrollbar-track { background: #050505; }
+        ::-webkit-scrollbar-thumb { background: #333; border-radius: 5px; border: 2px solid #050505; }
+        ::-webkit-scrollbar-thumb:hover { background: #555; }
+
+        /* App 互動元件 */
+        .range-slider { -webkit-appearance: none; width: 100%; background: transparent; }
+        .range-slider::-webkit-slider-runnable-track { width: 100%; height: 6px; background: #333; border-radius: 3px; }
+        .range-slider::-webkit-slider-thumb { -webkit-appearance: none; height: 20px; width: 20px; border-radius: 50%; background: #f97316; margin-top: -7px; cursor: pointer; border: 2px solid #fff; }
+        
+        .quiz-option { border: 1px solid rgba(255,255,255,0.1); transition: all 0.2s; cursor: pointer; }
+        .quiz-option:hover:not(:disabled) { background: rgba(255,255,255,0.05); border-color: #3b82f6; }
+        .quiz-option.correct { background: rgba(16, 185, 129, 0.15) !important; border-color: #10b981 !important; color: #34d399; }
+        .quiz-option.wrong { background: rgba(239, 68, 68, 0.15) !important; border-color: #ef4444 !important; color: #f87171; }
+        
+        .text-glow { text-shadow: 0 0 20px rgba(255,255,255,0.3); }
+    </style>
+</head>
+<body class="font-sans bg-[url('https://www.transparenttextures.com/patterns/stardust.png')] selection:bg-blue-500 selection:text-white">
+
+    <!-- Loading -->
+    <div id="loader">
+        <div class="font-display text-6xl font-bold text-white mb-4 tracking-tighter">GEOPHYSICS LAB</div>
+        <div class="font-mono text-blue-500 text-sm tracking-[0.4em] uppercase">System Initializing</div>
+        <div class="loader-line"><div class="loader-fill" id="progress"></div></div>
+    </div>
+
+    <!-- 頂部導覽列 (Fixed Header) -->
+    <nav class="fixed top-0 left-0 w-full z-50 bg-black/50 backdrop-blur-md border-b border-white/5 transition-all duration-300" id="navbar">
+        <div class="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
+            <div class="flex items-center gap-4 cursor-pointer group" onclick="showDashboard()">
+                <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-600 to-purple-600 flex items-center justify-center text-white font-bold text-sm shadow-lg group-hover:scale-110 transition">L</div>
+                <div>
+                    <h1 class="text-white font-bold text-sm tracking-wide group-hover:text-blue-400 transition">林煜宸</h1>
+                    <span class="text-[10px] text-slate-500 font-mono">U11310019</span>
+                </div>
+            </div>
+            
+            <div class="flex items-center gap-4">
+                <button onclick="showDashboard()" id="home-btn" class="hidden px-4 py-2 text-xs font-bold text-slate-400 hover:text-white bg-white/5 hover:bg-white/10 rounded-full transition flex items-center gap-2">
+                    <i data-lucide="layout-grid" class="w-4 h-4"></i> 回主選單
+                </button>
+                <a href="https://github.com/diego40427-lgtm" target="_blank" class="p-2 text-slate-400 hover:text-white transition">
+                    <i data-lucide="github" class="w-5 h-5"></i>
+                </a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- 背景裝飾 -->
+    <div class="fixed top-0 left-0 w-full h-full overflow-hidden -z-10 pointer-events-none">
+        <div class="absolute top-[-10%] right-[-10%] w-[800px] h-[800px] bg-blue-900/10 rounded-full blur-[120px]"></div>
+        <div class="absolute bottom-[-10%] left-[-10%] w-[600px] h-[600px] bg-purple-900/10 rounded-full blur-[120px]"></div>
+    </div>
+
+    <main class="max-w-7xl mx-auto px-6 relative z-10">
+        
+        <!-- 1. 儀表板主選單 (Dashboard Menu) -->
+        <div id="dashboard-view" class="view-section active pt-32">
+            <!-- Header -->
+            <header class="mb-16 text-center">
+                <div class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-blue-500/10 border border-blue-500/20 text-blue-400 text-sm font-mono mb-6 animate-pulse">
+                    <span class="w-2 h-2 rounded-full bg-blue-400"></span> 113學年度學習歷程
+                </div>
+                <h2 class="text-5xl md:text-7xl font-display font-bold text-white mb-6 tracking-tight">Geophysics Portfolio</h2>
+                <p class="text-slate-400 text-lg max-w-2xl mx-auto leading-relaxed">
+                    整合地球物理理論、Python 程式設計與 AI 應用。<br>
+                    點擊下方卡片查看詳細學習成果。
+                </p>
+            </header>
+
+            <!-- Grid Layout -->
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 pb-20">
+                
+                <!-- Section 1: Foundation -->
+                <div class="col-span-full mb-2 flex items-center gap-4">
+                    <div class="h-[1px] bg-white/10 flex-1"></div>
+                    <span class="text-xs font-bold text-slate-500 uppercase tracking-[0.2em]">Course Foundation (HW1-6)</span>
+                    <div class="h-[1px] bg-white/10 flex-1"></div>
+                </div>
+
+                <div class="menu-card group border-l-4 border-l-blue-500" onclick="switchView('course')">
+                    <div class="flex justify-between items-start mb-4">
+                        <div class="p-3 bg-blue-500/10 rounded-xl text-blue-400 group-hover:bg-blue-500 group-hover:text-white transition"><i data-lucide="book-open" class="w-6 h-6"></i></div>
+                        <span class="text-xs font-mono text-slate-500">HW1-3</span>
+                    </div>
+                    <h3 class="text-xl font-bold text-white mb-2">課程基礎與環境</h3>
+                    <p class="text-sm text-slate-400 leading-relaxed">Linux, Docker, GitHub 環境建置與 ObsPy 地震波形讀取基礎。</p>
+                </div>
+
+                <div class="menu-card group border-l-4 border-l-blue-500" onclick="switchView('theory')">
+                    <div class="flex justify-between items-start mb-4">
+                        <div class="p-3 bg-blue-500/10 rounded-xl text-blue-400 group-hover:bg-blue-500 group-hover:text-white transition"><i data-lucide="function-square" class="w-6 h-6"></i></div>
+                        <span class="text-xs font-mono text-slate-500">HW4</span>
+                    </div>
+                    <h3 class="text-xl font-bold text-white mb-2">理論公式推導</h3>
+                    <p class="text-sm text-slate-400 leading-relaxed">折射震測走時公式 $T$ 與交會距離 $X_{cr}$ 的數學證明。</p>
+                </div>
+
+                <div class="menu-card group border-l-4 border-l-blue-500" onclick="switchView('lab')">
+                    <div class="flex justify-between items-start mb-4">
+                        <div class="p-3 bg-blue-500/10 rounded-xl text-blue-400 group-hover:bg-blue-500 group-hover:text-white transition"><i data-lucide="flask-conical" class="w-6 h-6"></i></div>
+                        <span class="text-xs font-mono text-slate-500">HW5</span>
+                    </div>
+                    <h3 class="text-xl font-bold text-white mb-2">震測實驗報告</h3>
+                    <p class="text-sm text-slate-400 leading-relaxed">校園實地操作，數據分析與地下構造速度層模型建立。</p>
+                </div>
+
+                <!-- Section 2: Computational -->
+                <div class="col-span-full mt-8 mb-2 flex items-center gap-4">
+                    <div class="h-[1px] bg-white/10 flex-1"></div>
+                    <span class="text-xs font-bold text-slate-500 uppercase tracking-[0.2em]">Computational & AI (HW7-11)</span>
+                    <div class="h-[1px] bg-white/10 flex-1"></div>
+                </div>
+
+                <div class="menu-card group border-l-4 border-l-purple-500" onclick="switchView('gravity')">
+                    <div class="flex justify-between items-start mb-4">
+                        <div class="p-3 bg-purple-500/10 rounded-xl text-purple-400 group-hover:bg-purple-500 group-hover:text-white transition"><i data-lucide="github" class="w-6 h-6"></i></div>
+                        <span class="text-xs font-mono text-slate-500">HW7</span>
+                    </div>
+                    <h3 class="text-xl font-bold text-white mb-2">重力 GitHub 專案</h3>
+                    <p class="text-sm text-slate-400 leading-relaxed">使用 Python 計算重力異常的開源專案程式碼。</p>
+                </div>
+
+                <div class="menu-card group border-l-4 border-l-orange-500" onclick="switchView('app')">
+                    <div class="flex justify-between items-start mb-4">
+                        <div class="p-3 bg-orange-500/10 rounded-xl text-orange-400 group-hover:bg-orange-500 group-hover:text-white transition"><i data-lucide="cpu" class="w-6 h-6"></i></div>
+                        <span class="text-xs font-mono text-slate-500">HW8</span>
+                    </div>
+                    <h3 class="text-xl font-bold text-white mb-2">重力異常 App</h3>
+                    <p class="text-sm text-slate-400 leading-relaxed">互動式網頁應用，整合 AI 進行即時地質解釋。</p>
+                    <div class="mt-4 flex gap-2">
+                        <span class="text-[10px] bg-orange-500/20 text-orange-300 px-2 py-1 rounded">Interactive</span>
+                        <span class="text-[10px] bg-purple-500/20 text-purple-300 px-2 py-1 rounded">AI Inside</span>
+                    </div>
+                </div>
+
+                <div class="menu-card group border-l-4 border-l-green-500" onclick="switchView('pygmt')">
+                    <div class="flex justify-between items-start mb-4">
+                        <div class="p-3 bg-green-500/10 rounded-xl text-green-400 group-hover:bg-green-500 group-hover:text-white transition"><i data-lucide="map" class="w-6 h-6"></i></div>
+                        <span class="text-xs font-mono text-slate-500">HW10-11</span>
+                    </div>
+                    <h3 class="text-xl font-bold text-white mb-2">PyGMT 視覺化</h3>
+                    <p class="text-sm text-slate-400 leading-relaxed">繪製全球地震分佈、板塊邊界與火山位置地圖。</p>
+                </div>
+                
+                <!-- Section 3: Extra -->
+                <div class="col-span-full mt-8 mb-2 flex items-center gap-4">
+                    <div class="h-[1px] bg-white/10 flex-1"></div>
+                    <span class="text-xs font-bold text-slate-500 uppercase tracking-[0.2em]">Challenge</span>
+                    <div class="h-[1px] bg-white/10 flex-1"></div>
+                </div>
+
+                <div class="menu-card group border-l-4 border-l-red-500" onclick="switchView('quiz')">
+                    <div class="flex justify-between items-start mb-4">
+                        <div class="p-3 bg-red-500/10 rounded-xl text-red-400 group-hover:bg-red-500 group-hover:text-white transition"><i data-lucide="trophy" class="w-6 h-6"></i></div>
+                        <span class="text-xs font-mono text-slate-500">Final</span>
+                    </div>
+                    <h3 class="text-xl font-bold text-white mb-2">古地磁挑戰賽</h3>
+                    <p class="text-sm text-slate-400 leading-relaxed">測試您對板塊構造與古地磁學的理解。</p>
+                </div>
+                
+                 <div class="menu-card group border-l-4 border-l-slate-700" onclick="switchView('speech')">
+                    <div class="flex justify-between items-start mb-4">
+                        <div class="p-3 bg-slate-700/30 rounded-xl text-slate-400 group-hover:bg-slate-700 group-hover:text-white transition"><i data-lucide="mic-2" class="w-6 h-6"></i></div>
+                        <span class="text-xs font-mono text-slate-500">HW6</span>
+                    </div>
+                    <h3 class="text-xl font-bold text-white mb-2">演講心得</h3>
+                    <p class="text-sm text-slate-400 leading-relaxed">甘禮有博士：地震波應用與炸點實驗心得報告。</p>
+                </div>
+                
+                <div class="menu-card group border-l-4 border-l-purple-500" onclick="switchView('ai')">
+                    <div class="flex justify-between items-start mb-4">
+                        <div class="p-3 bg-purple-500/10 rounded-xl text-purple-400 group-hover:bg-purple-500 group-hover:text-white transition"><i data-lucide="bot" class="w-6 h-6"></i></div>
+                        <span class="text-xs font-mono text-slate-500">HW9</span>
+                    </div>
+                    <h3 class="text-xl font-bold text-white mb-2">AI 助手實作</h3>
+                    <p class="text-sm text-slate-400 leading-relaxed">整合 Dify 與 LLM 進行資料檢索與筆記生成。</p>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- 2. 詳細內容區塊 (Content Views) -->
+        
+        <!-- HW1-3 -->
+        <div id="course" class="view-section">
+            <div class="max-w-4xl mx-auto">
+                <div class="mb-8"><button onclick="showDashboard()" class="text-slate-500 hover:text-white flex items-center gap-2 transition"><i data-lucide="arrow-left" class="w-4 h-4"></i> Back to Menu</button></div>
+                <h2 class="text-4xl font-display font-bold text-white mb-8">課程基礎 Foundation <span class="text-lg font-mono text-slate-500 ml-4">HW1 - HW3</span></h2>
+                <div class="glass-panel mb-8">
+                    <div class="flex items-center gap-4 mb-6">
+                        <div class="p-3 bg-blue-500/20 rounded-lg text-blue-400"><i data-lucide="terminal" class="w-6 h-6"></i></div>
+                        <h3 class="text-2xl font-bold text-white">環境建置與 ObsPy</h3>
+                    </div>
+                    <p class="text-slate-300 leading-loose mb-6">
+                        本階段重點在於建立穩固的地球物理運算環境。使用 Docker 容器化技術確保開發環境的一致性，並學習使用 ObsPy 套件處理地震波形資料 (MSEED/SAC)。
+                    </p>
+                    <div class="bg-black/40 p-6 rounded-xl border border-white/5 font-mono text-sm text-green-300">
+                        <span class="text-purple-400">from</span> obspy <span class="text-purple-400">import</span> read<br>
+                        st = read(<span class="text-yellow-300">'./data/earthquake.mseed'</span>)<br>
+                        st.filter(<span class="text-yellow-300">'bandpass'</span>, freqmin=1.0, freqmax=5.0)<br>
+                        st.plot()
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- HW4 -->
+        <div id="theory" class="view-section">
+            <div class="max-w-4xl mx-auto">
+                <div class="mb-8"><button onclick="showDashboard()" class="text-slate-500 hover:text-white flex items-center gap-2 transition"><i data-lucide="arrow-left" class="w-4 h-4"></i> Back to Menu</button></div>
+                <h2 class="text-4xl font-display font-bold text-white mb-8">理論推導 Theory <span class="text-lg font-mono text-slate-500 ml-4">HW4</span></h2>
+                <div class="glass-panel">
+                    <h3 class="text-2xl font-bold text-white mb-8">折射震測公式證明</h3>
+                    <div class="grid md:grid-cols-2 gap-8">
+                        <div class="bg-slate-900/50 p-8 rounded-2xl border border-white/5 text-center">
+                            <p class="text-sm text-slate-500 uppercase tracking-widest mb-4">Travel Time Equation</p>
+                            <span class="text-2xl text-white font-mono">$$ T = \frac{x}{V_2} + \frac{2h \cos \theta_c}{V_1} $$</span>
+                        </div>
+                         <div class="bg-slate-900/50 p-8 rounded-2xl border border-white/5 text-center">
+                            <p class="text-sm text-slate-500 uppercase tracking-widest mb-4">Crossover Distance</p>
+                            <span class="text-2xl text-white font-mono">$$ X_{cr} = 2h \sqrt{\frac{V_2 + V_1}{V_2 - V_1}} $$</span>
+                        </div>
+                    </div>
+                    <div class="mt-8 text-slate-300 leading-loose">
+                        <p>推導過程基於斯乃爾定律 (Snell's Law) 與幾何路徑分析。當震測剖面長度大於 $X_{cr}$ 時，折射波將比直達波更早到達接收器，此特性可用於判斷基盤深度。</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- HW5 Lab -->
+        <div id="lab" class="view-section">
+            <div class="max-w-4xl mx-auto">
+                <div class="mb-8"><button onclick="showDashboard()" class="text-slate-500 hover:text-white flex items-center gap-2 transition"><i data-lucide="arrow-left" class="w-4 h-4"></i> Back to Menu</button></div>
+                <h2 class="text-4xl font-display font-bold text-white mb-8">震測實驗 Lab <span class="text-lg font-mono text-slate-500 ml-4">HW5</span></h2>
+                <div class="glass-panel border-t-4 border-orange-500">
+                    <div class="flex items-center justify-between mb-8">
+                        <h3 class="text-2xl font-bold text-white">實地觀測數據</h3>
+                        <span class="px-3 py-1 bg-orange-500/20 text-orange-400 rounded-full text-xs font-bold">Field Work</span>
+                    </div>
+                    <div class="grid grid-cols-3 gap-6 mb-8">
+                        <div class="p-6 bg-slate-800/50 rounded-2xl text-center">
+                            <div class="text-xs text-slate-500 uppercase mb-2">V1</div>
+                            <div class="text-3xl font-bold text-white font-mono">457 m/s</div>
+                        </div>
+                        <div class="p-6 bg-slate-800/50 rounded-2xl text-center">
+                            <div class="text-xs text-slate-500 uppercase mb-2">V2</div>
+                            <div class="text-3xl font-bold text-white font-mono">593 m/s</div>
+                        </div>
+                        <div class="p-6 bg-orange-900/20 rounded-2xl text-center border border-orange-500/30">
+                            <div class="text-xs text-orange-400 uppercase mb-2">Depth</div>
+                            <div class="text-3xl font-bold text-orange-500 font-mono">4.38 m</div>
+                        </div>
+                    </div>
+                    <p class="text-slate-300 leading-loose">實驗結果顯示校園地下淺層存在明顯的速度不連續面。透過分析初達波走時 (First Break)，我們成功重建了雙層速度模型。</p>
+                </div>
+            </div>
+        </div>
+        
+        <!-- HW6 Speech -->
+        <div id="speech" class="view-section">
+             <div class="max-w-4xl mx-auto">
+                <div class="mb-8"><button onclick="showDashboard()" class="text-slate-500 hover:text-white flex items-center gap-2 transition"><i data-lucide="arrow-left" class="w-4 h-4"></i> Back to Menu</button></div>
+                <h2 class="text-4xl font-display font-bold text-white mb-8">演講心得 Reflection <span class="text-lg font-mono text-slate-500 ml-4">HW6</span></h2>
+                <div class="glass-panel">
+                     <div class="flex items-center gap-6 mb-8">
+                        <div class="w-16 h-16 rounded-full bg-slate-700 flex items-center justify-center flex-shrink-0"><i data-lucide="mic-2" class="w-8 h-8 text-white"></i></div>
+                        <div>
+                            <h3 class="text-2xl font-bold text-white">甘禮有 博士專題演講</h3>
+                            <p class="text-slate-400">主題：地震波應用與炸點實驗</p>
+                        </div>
+                    </div>
+                    <div class="bg-slate-800/50 p-8 rounded-2xl italic text-slate-300 leading-loose border-l-4 border-slate-500">
+                        "學長清楚講解了如何監測地震波與平時利用炸點實驗觀測地震波的相關實驗流程。整場演講不僅內容很滿，也感受到學長在大學所學的專業知識與研究精神。"
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- HW7 Gravity GitHub -->
+        <div id="gravity" class="view-section">
+             <div class="max-w-4xl mx-auto">
+                <div class="mb-8"><button onclick="showDashboard()" class="text-slate-500 hover:text-white flex items-center gap-2 transition"><i data-lucide="arrow-left" class="w-4 h-4"></i> Back to Menu</button></div>
+                <h2 class="text-4xl font-display font-bold text-white mb-8">重力作業 Gravity <span class="text-lg font-mono text-slate-500 ml-4">HW7</span></h2>
+                <div class="glass-panel text-center py-16">
+                    <div class="w-24 h-24 bg-slate-800 rounded-full flex items-center justify-center mx-auto mb-6 text-white shadow-xl">
+                        <i data-lucide="git-branch" class="w-10 h-10"></i>
+                    </div>
+                    <h3 class="text-2xl font-bold text-white mb-2">GitHub Repository</h3>
+                    <p class="text-slate-400 mb-8"><code>geophysics_HW_2025</code></p>
+                    <a href="#" class="inline-flex items-center gap-2 px-8 py-3 bg-white text-black font-bold rounded-full hover:bg-slate-200 transition">
+                        <i data-lucide="github" class="w-5 h-5"></i> View Source Code
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- HW8 Gravity App -->
+        <div id="app" class="view-section">
+            <div class="max-w-5xl mx-auto">
+                <div class="mb-8"><button onclick="showDashboard()" class="text-slate-500 hover:text-white flex items-center gap-2 transition"><i data-lucide="arrow-left" class="w-4 h-4"></i> Back to Menu</button></div>
+                
+                <div class="glass-panel border-t-8 border-orange-500 shadow-2xl">
+                    <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-10 pb-6 border-b border-white/5 gap-4">
+                        <div>
+                            <h2 class="text-3xl font-bold text-white mb-1">重力異常計算器 (HW8)</h2>
+                            <p class="text-slate-400 text-sm font-mono tracking-wide">GRADIO FRAMEWORK • AI INTEGRATED</p>
+                        </div>
+                        <div class="flex items-center gap-2 text-green-400 text-xs font-mono bg-green-500/10 px-3 py-1 rounded-full border border-green-500/20">
+                            <span class="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span> SYSTEM ONLINE
+                        </div>
+                    </div>
+                    
+                    <div class="grid md:grid-cols-12 gap-10">
+                        <!-- Controls -->
+                        <div class="md:col-span-5 space-y-8 md:border-r border-white/5 md:pr-10">
+                            <div>
+                                <label class="text-xs font-bold text-slate-500 uppercase block mb-2 tracking-widest">Observed Gravity ($g_{obs}$)</label>
+                                <input type="number" id="input-g-obs" class="w-full bg-slate-900 border border-slate-700 rounded-xl p-4 text-white font-mono focus:border-blue-500 outline-none transition" value="978000">
+                            </div>
+                            <div>
+                                <label class="text-xs font-bold text-slate-500 uppercase block mb-2 tracking-widest">Theoretical Gravity ($g_{theo}$)</label>
+                                <input type="number" id="input-g-theo" class="w-full bg-slate-900 border border-slate-700 rounded-xl p-4 text-white font-mono focus:border-blue-500 outline-none transition" value="978030">
+                            </div>
+                            <div>
+                                <div class="flex justify-between mb-2">
+                                    <label class="text-xs font-bold text-slate-500 uppercase tracking-widest">Height ($h$)</label>
+                                    <span id="height-val" class="text-xs text-blue-400 font-mono bg-blue-500/10 px-2 py-1 rounded">150 m</span>
+                                </div>
+                                <input type="range" id="input-height" class="range-slider" min="0" max="1000" value="150">
+                            </div>
+                            <button id="btn-calc" class="w-full bg-orange-600 hover:bg-orange-500 text-white font-bold py-4 rounded-xl transition shadow-lg shadow-orange-600/20 flex items-center justify-center gap-2">
+                                <i data-lucide="cpu" class="w-5 h-5"></i> EXECUTE
+                            </button>
+                        </div>
+
+                        <!-- Visualization -->
+                        <div class="md:col-span-7 flex flex-col justify-between">
+                            <div class="bg-slate-900/50 rounded-2xl p-8 text-center border border-white/5 relative overflow-hidden group">
+                                <div class="absolute inset-0 bg-gradient-to-br from-blue-500/5 to-transparent opacity-0 group-hover:opacity-100 transition duration-500"></div>
+                                <p class="text-[10px] text-slate-500 mb-4 uppercase tracking-[0.2em]">CALCULATED RESULT</p>
+                                <div class="text-7xl font-mono font-bold text-white mb-2 tracking-tighter text-glow" id="faa-result">16.29</div>
+                                <div class="text-sm text-slate-500 font-mono">Free Air Anomaly (mGal)</div>
+                            </div>
+                            
+                            <div class="border-t border-white/5 pt-6 mt-6">
+                                <button id="btn-ai" class="flex items-center gap-2 text-xs text-purple-400 hover:text-purple-300 font-bold uppercase tracking-wider transition group">
+                                    <span class="p-2 bg-purple-500/10 rounded-lg group-hover:bg-purple-500/20 transition"><i data-lucide="sparkles" class="w-4 h-4"></i></span>
+                                    AI Geological Interpretation
+                                </button>
+                                <div id="ai-output" class="mt-4 text-sm text-slate-400 font-mono leading-relaxed pl-10 border-l-2 border-purple-500/30 opacity-0 transition-opacity"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- HW9 AI -->
+         <div id="ai" class="view-section">
+             <div class="max-w-4xl mx-auto">
+                <div class="mb-8"><button onclick="showDashboard()" class="text-slate-500 hover:text-white flex items-center gap-2 transition"><i data-lucide="arrow-left" class="w-4 h-4"></i> Back to Menu</button></div>
+                <h2 class="text-4xl font-display font-bold text-white mb-8">AI 助手實作 <span class="text-lg font-mono text-slate-500 ml-4">HW9</span></h2>
+                <div class="glass-panel relative overflow-hidden">
+                    <div class="absolute top-0 right-0 p-10 opacity-5 pointer-events-none"><i data-lucide="bot" class="w-64 h-64 text-purple-500"></i></div>
+                    <div class="flex items-center gap-6 mb-8">
+                        <div class="p-4 bg-purple-500/20 rounded-2xl text-purple-400 border border-purple-500/30"><i data-lucide="workflow" class="w-8 h-8"></i></div>
+                        <div>
+                            <h3 class="text-2xl font-bold text-white">Dify 智能筆記生成器</h3>
+                            <p class="text-slate-400">整合 Gemini Pro 與 Tavily Search</p>
+                        </div>
+                    </div>
+                    <div class="bg-black/40 p-6 rounded-xl border border-white/5 font-mono text-sm text-slate-300 leading-loose">
+                         <span class="text-purple-400"># Workflow Result</span><br>
+                         成功生成了 Mary Margaret O'Reilly 的詳細生平筆記，包含其「財政部甜心」的稱號與職涯貢獻。驗證了 AI Agent 在整理歷史文獻上的高效率。
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- HW10-11 PyGMT -->
+        <div id="pygmt" class="view-section">
+             <div class="max-w-4xl mx-auto">
+                <div class="mb-8"><button onclick="showDashboard()" class="text-slate-500 hover:text-white flex items-center gap-2 transition"><i data-lucide="arrow-left" class="w-4 h-4"></i> Back to Menu</button></div>
+                <h2 class="text-4xl font-display font-bold text-white mb-8">PyGMT 視覺化 <span class="text-lg font-mono text-slate-500 ml-4">HW10-11</span></h2>
+                <div class="glass-panel flex flex-col md:flex-row gap-8 items-center">
+                    <div class="flex-1">
+                        <h3 class="text-2xl font-bold text-white mb-4">全球地震與板塊地圖</h3>
+                        <p class="text-slate-300 leading-loose mb-6">
+                            使用 PyGMT 繪製全球 (Global Scale) 構造地圖。結合震央資料、板塊邊界與地形陰影，產出高品質的科學圖表。
+                        </p>
+                         <a href="https://github.com/diego40427-lgtm/PyGMT_0_17_0_GoogleColab" target="_blank" class="inline-flex items-center gap-2 text-green-400 hover:text-green-300 font-bold transition">
+                            查看教學網站 <i data-lucide="external-link" class="w-4 h-4"></i>
+                        </a>
+                    </div>
+                    <div class="w-full md:w-1/2 aspect-video bg-slate-900/80 rounded-xl relative overflow-hidden flex items-center justify-center group border border-white/10">
+                        <span class="text-xs text-slate-500">Map Visualization Placeholder</span>
+                         <div class="absolute top-1/2 left-1/2 w-2 h-2 bg-red-500 rounded-full shadow-[0_0_15px_red] animate-ping"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Quiz -->
+        <div
